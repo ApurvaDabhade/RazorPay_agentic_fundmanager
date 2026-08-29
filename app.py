@@ -1,18 +1,22 @@
 """
 app.py
-Project Sentinel: Predictive & Autonomous AI Project Manager
-Streamlit Interactive Dashboard & Command Center
+Project Sentinel: Next-Gen Autonomous & Predictive AI Project Manager
+Ultra-Modern Glassmorphic Streamlit Dashboard with Plotly Visual Analytics
 """
 
 import streamlit as st
 import json
+import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime
 from sentinel.sample_data import get_razorpay_project_state, get_ecommerce_project_state
 from sentinel.orchestrator import SentinelOrchestrator
 from sentinel.models import TaskStatus, ActionStatus, HealthTier
+from sentinel.scenario_simulator import ScenarioSimulator
+from sentinel.dependency_engine import DependencyEngine
 
 
-# Configure page settings
+# Set Page Config
 st.set_page_config(
     page_title="Project Sentinel | Autonomous Predictive AI PM",
     page_icon="🛡️",
@@ -20,65 +24,142 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern glassmorphism aesthetic
+# Custom High-End SaaS Dark Theme & Glassmorphism CSS
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.2rem;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .stApp {
+        background: radial-gradient(circle at 10% 20%, #0B0F19 0%, #0F172A 100%);
+        color: #F8FAFC;
+    }
+    
+    .glass-card {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .glass-card:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+    
+    .hero-title {
+        font-size: 2.4rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #3B82F6 0%, #8B5CF6 100%);
+        background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #F472B6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.2rem;
+        letter-spacing: -0.02em;
+        margin-bottom: 4px;
     }
-    .sub-header {
+    
+    .hero-sub {
         color: #94A3B8;
         font-size: 1.05rem;
-        margin-bottom: 1.5rem;
+        font-weight: 400;
+        margin-bottom: 20px;
     }
-    .metric-card {
-        background-color: #1E293B;
+    
+    .live-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(16, 185, 129, 0.12);
+        color: #34D399;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        padding: 6px 14px;
+        border-radius: 9999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+    }
+    
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #34D399;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #34D399;
+    }
+    
+    .causal-node {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
-        padding: 18px;
-        border: 1px solid #334155;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 16px 20px;
+        margin-bottom: 14px;
+        position: relative;
     }
-    .badge-critical {
-        background-color: #EF444422;
-        color: #EF4444;
-        padding: 4px 10px;
-        border-radius: 20px;
+    
+    .causal-arrow {
+        text-align: center;
+        color: #6366F1;
+        font-size: 1.4rem;
+        margin: -6px 0 8px 0;
+        font-weight: bold;
+    }
+    
+    .tag-critical {
+        background: rgba(239, 68, 68, 0.15);
+        color: #F87171;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
         font-weight: 600;
-        border: 1px solid #EF444455;
     }
-    .badge-warning {
-        background-color: #F59E0B22;
-        color: #F59E0B;
-        padding: 4px 10px;
-        border-radius: 20px;
+    
+    .tag-high {
+        background: rgba(245, 158, 11, 0.15);
+        color: #FBBF24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
         font-weight: 600;
-        border: 1px solid #F59E0B55;
     }
-    .badge-healthy {
-        background-color: #10B98122;
-        color: #10B981;
-        padding: 4px 10px;
-        border-radius: 20px;
+    
+    .tag-optimal {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60A5FA;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
         font-weight: 600;
-        border: 1px solid #10B98155;
     }
-    .causal-step {
-        background-color: #0F172A;
-        border-left: 4px solid #3B82F6;
-        padding: 12px 16px;
-        margin-bottom: 12px;
-        border-radius: 0 8px 8px 0;
+    
+    .tag-success {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34D399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
-    .hitl-box {
-        background: linear-gradient(135deg, #1E1B4B 0%, #1E293B 100%);
-        border: 1px solid #6366F1;
-        border-radius: 12px;
-        padding: 16px;
+    
+    .stButton>button {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    
+    .hitl-container {
+        background: linear-gradient(135deg, rgba(30, 27, 75, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.35);
+        border-radius: 14px;
+        padding: 20px;
         margin-bottom: 16px;
     }
 </style>
@@ -92,20 +173,25 @@ if "project_choice" not in st.session_state:
 if "orchestrator" not in st.session_state:
     st.session_state.orchestrator = SentinelOrchestrator(get_razorpay_project_state())
 
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = "🎯 Executive Dashboard"
 
-
-# Sidebar
+# Sidebar Configuration
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/shield.png", width=64)
-    st.markdown("## **Project Sentinel**")
-    st.caption("Autonomous & Predictive AI Project Manager")
-    st.divider()
+    st.markdown("""
+    <div style='display: flex; align-items: center; gap: 12px; margin-bottom: 12px;'>
+        <span style='font-size: 2.2rem;'>🛡️</span>
+        <div>
+            <div style='font-size: 1.3rem; font-weight: 800; color: #F8FAFC;'>Sentinel AI</div>
+            <div style='font-size: 0.75rem; color: #818CF8; font-weight: 600;'>AUTONOMOUS PM AGENT</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div class='live-badge'><div class='pulse-dot'></div>SYSTEM ONLINE (LIVE)</div>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("### 📁 Project Dataset")
+    st.markdown("### 🎯 Active Project")
     selected_project = st.selectbox(
-        "Choose Project Scenario",
+        "Choose Project Dataset",
         [
             "Razorpay Payment Gateway Core Integration",
             "Flash Sale Scalability & One-Click Checkout"
@@ -121,33 +207,35 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.markdown("### ⚡ Fast Navigation")
+    st.markdown("### 🧭 Intelligence Navigation")
     menu = st.radio(
-        "Workflow Stage",
+        "Select View",
         [
-            "🎯 Executive Dashboard",
+            "🎯 Executive Command Center",
             "🔮 1. Predictive Risk Engine",
             "🕵️ 2. Root Cause Investigator",
             "🤖 3. Autonomous Action Center",
             "🧠 4. What-If Scenario Sandbox",
             "👥 5. Team Workload & Burnout",
-            "🔗 6. Dependency Intelligence & CPM",
+            "🔗 6. Dependency DAG & Critical Path",
             "📚 7. Project Institutional Memory"
         ]
     )
 
     st.divider()
-    st.markdown("### ⚙️ Demo Actions")
-    if st.button("🔄 Reset Project State"):
+    st.markdown("### ⚙️ Quick Actions")
+    if st.button("🔄 Reset Project Baseline", use_container_width=True):
         if "Razorpay" in st.session_state.project_choice:
             st.session_state.orchestrator.set_state(get_razorpay_project_state())
         else:
             st.session_state.orchestrator.set_state(get_ecommerce_project_state())
-        st.success("Project state reset to nominal demo baseline.")
+        st.success("Project state reset.")
         st.rerun()
 
+    st.caption("Powered by Sentinel Multi-Agent Core Engine • MIT License")
 
-# Run analysis cycle
+
+# Run Orchestrator Analysis Cycle
 orch = st.session_state.orchestrator
 analysis = orch.run_full_cycle()
 state = orch.state
@@ -156,429 +244,471 @@ risk = analysis["risk"]
 root_cause = analysis["root_cause"]
 
 
-# Top Header
-col_head1, col_head2 = st.columns([3, 1])
-with col_head1:
-    st.markdown(f"<div class='main-header'>🛡️ Project Sentinel: {state.name}</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='sub-header'>{state.description} • <b>Day {state.current_day} of {state.target_deadline_days}</b></div>", unsafe_allow_html=True)
+# Top Banner & Global Stats
+col_h1, col_h2 = st.columns([3, 1])
+with col_h1:
+    st.markdown(f"<div class='hero-title'>🛡️ {state.name}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='hero-sub'>{state.description} • <b>Day {state.current_day} of {state.target_deadline_days}</b> • Budget: <b>₹{int(state.budget_allocated):,}</b></div>", unsafe_allow_html=True)
 
-with col_head2:
-    tier_class = "badge-healthy" if health.tier == HealthTier.HEALTHY else ("badge-warning" if health.tier == HealthTier.NEEDS_ATTENTION else "badge-critical")
-    tier_label = "🟢 HEALTHY" if health.tier == HealthTier.HEALTHY else ("🟡 NEEDS ATTENTION" if health.tier == HealthTier.NEEDS_ATTENTION else "🔴 CRITICAL RISK")
-    st.markdown(f"<div style='text-align: right; padding-top: 10px;'><span class='{tier_class}' style='font-size: 1.1rem;'>{tier_label}</span></div>", unsafe_allow_html=True)
+with col_h2:
+    if health.tier == HealthTier.HEALTHY:
+        status_html = "<span class='tag-success' style='font-size: 1rem; padding: 6px 14px;'>🟢 HEALTHY (80-100)</span>"
+    elif health.tier == HealthTier.NEEDS_ATTENTION:
+        status_html = "<span class='tag-high' style='font-size: 1rem; padding: 6px 14px;'>🟡 NEEDS ATTENTION</span>"
+    else:
+        status_html = "<span class='tag-critical' style='font-size: 1rem; padding: 6px 14px;'>🔴 CRITICAL RISK</span>"
+    st.markdown(f"<div style='text-align: right; padding-top: 8px;'>{status_html}</div>", unsafe_allow_html=True)
 
 
-st.divider()
-
-
-# ==========================================
-# 1. EXECUTIVE DASHBOARD
-# ==========================================
-if menu == "🎯 Executive Dashboard":
-    st.subheader("🎯 Executive Command Center")
+# =========================================================================
+# 1. EXECUTIVE COMMAND CENTER
+# =========================================================================
+if menu == "🎯 Executive Command Center":
+    st.markdown("### 🎯 Executive Health & Risk Overview")
     
-    # Top KPI Cards
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric(
-            label="📈 Project Health Score",
-            value=f"{health.overall_score} / 100",
-            delta=f"{health.tier.value.replace('_', ' ')}"
-        )
-    with col2:
-        st.metric(
-            label="⚠️ Deadline Risk Probability",
-            value=f"{risk.probability_of_delay}%",
-            delta=f"{risk.deadline_risk_level} RISK",
-            delta_color="inverse"
-        )
-    with col3:
-        st.metric(
-            label="⏱️ Predicted Slippage",
-            value=f"+{risk.predicted_delay_days} days",
-            delta=f"95% CI: [{risk.confidence_interval_95[0]}d, {risk.confidence_interval_95[1]}d]",
-            delta_color="inverse"
-        )
-    with col4:
-        st.metric(
-            label="📊 Sprint Progress Drift",
-            value=f"{risk.current_progress_pct}%",
-            delta=f"Target: {risk.expected_progress_pct}% ({round(risk.current_progress_pct - risk.expected_progress_pct, 1)}%)",
-            delta_color="normal"
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Health Breakdown Grid
-    col_dim, col_alerts = st.columns([1, 1])
-    with col_dim:
-        st.markdown("#### 📊 Multi-Dimensional Health Matrix")
-        
-        dimensions = [
-            ("Schedule Health (25%)", health.schedule_score),
-            ("Budget Health (15%)", health.budget_score),
-            ("Resource Health (20%)", health.resources_score),
-            ("Dependency Health (15%)", health.dependencies_score),
-            ("Risk Health (15%)", health.risk_score),
-            ("Quality Health (10%)", health.quality_score)
-        ]
-        
-        for name, score in dimensions:
-            bar_color = "🟢" if score >= 80 else ("🟡" if score >= 60 else "🔴")
-            st.write(f"**{name}**: {score}/100 {bar_color}")
-            st.progress(score / 100.0)
-
-    with col_alerts:
-        st.markdown("#### 🚨 Active Risk Triggers & Critical Alerts")
-        for alert in health.alerts:
-            st.error(f"⚠️ {alert}")
-        for highlight in health.highlights:
-            st.success(f"✅ {highlight}")
-
-        st.info(f"💡 **Primary Bottleneck Vector**: {risk.primary_causes[0] if risk.primary_causes else 'Nominal'}")
-
-
-# ==========================================
-# 2. PREDICTIVE RISK ENGINE
-# ==========================================
-elif menu == "🔮 1. Predictive Risk Engine":
-    st.subheader("🔮 Predictive Risk Detection (Monte Carlo Engine)")
-    st.caption("Stochastic simulation of 2,500 delivery trajectories based on velocity variance and critical path dependencies.")
-
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.markdown("### ⚠️ Predicted Deadline Risk Profile")
-        
+    # 4 KPI Cards
+    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+    with col_k1:
         st.markdown(f"""
-        ```text
-        ⚠️ Deadline Risk: {risk.deadline_risk_level}
-        
-        Current progress:  {risk.current_progress_pct}%
-        Expected progress: {risk.expected_progress_pct}%
-        
-        Predicted delay:   {risk.predicted_delay_days} days
-        Probability:       {risk.probability_of_delay}%
-        
-        Main cause:
-        {risk.primary_causes[0] if risk.primary_causes else 'Nominal variance.'}
-        ```
-        """)
-
-        st.write(f"**95% Confidence Delivery Range**: Day {risk.confidence_interval_95[0]} to Day {risk.confidence_interval_95[1]}")
-        st.write(f"**Target Deadline**: Day {state.target_deadline_days}")
-
-    with col2:
-        st.markdown("### 📉 Simulation Trajectory Distribution")
-        st.write(f"Based on **{risk.simulation_runs:,} Monte Carlo runs**, historical velocity **{state.historical_velocity_avg} pts/day (σ={state.historical_velocity_std})**.")
-        
-        sample_data = risk.trajectory_samples
-        if sample_data:
-            st.line_chart(sample_data, use_container_width=True)
-            st.caption("Distribution of sampled project finish days (Baseline deadline is marked at Day " + str(state.target_deadline_days) + ")")
-
-    st.divider()
-    st.markdown("#### 🔍 Primary Delay Drivers")
-    for i, cause in enumerate(risk.primary_causes, 1):
-        st.warning(f"**Driver #{i}**: {cause}")
-
-
-# ==========================================
-# 3. ROOT CAUSE INVESTIGATOR
-# ==========================================
-elif menu == "🕵️ 2. Root Cause Investigator":
-    st.subheader("🕵️ AI Root-Cause Investigator")
-    st.caption("Autonomous causal graph traversal from observable sprint symptoms to core structural bottlenecks.")
-
-    st.markdown(f"### 📋 Issue Summary: *{root_cause.issue_summary}*")
-    st.info(f"🎯 **Investigation Confidence**: {root_cause.confidence_pct}%")
-
-    st.markdown("### ⛓️ Causal Diagnostic Chain")
-    for node in root_cause.chain:
-        step_color = "#EF4444" if node.node_type == "ROOT_CAUSE" else ("#F59E0B" if node.node_type == "BOTTLENECK" else "#3B82F6")
+        <div class='glass-card' style='border-top: 3px solid #6366F1;'>
+            <div style='color: #94A3B8; font-size: 0.85rem; font-weight: 600;'>PROJECT HEALTH SCORE</div>
+            <div style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; margin: 4px 0;'>{health.overall_score}<span style='font-size: 1.1rem; color: #64748B;'>/100</span></div>
+            <div style='font-size: 0.8rem; color: #818CF8;'>Multi-Dimensional Weighted</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_k2:
         st.markdown(f"""
-        <div class='causal-step' style='border-left-color: {step_color};'>
-            <span style='color: {step_color}; font-weight: bold;'>STEP {node.step_number}: [{node.node_type}]</span><br>
-            <b style='font-size: 1.1rem;'>{node.title}</b><br>
-            <p style='margin: 4px 0;'>{node.description}</p>
-            <small style='color: #94A3B8;'><b>Evidence:</b> {node.evidence}</small>
+        <div class='glass-card' style='border-top: 3px solid #EF4444;'>
+            <div style='color: #94A3B8; font-size: 0.85rem; font-weight: 600;'>DEADLINE FAILURE RISK</div>
+            <div style='font-size: 2.2rem; font-weight: 800; color: #EF4444; margin: 4px 0;'>{risk.probability_of_delay}%</div>
+            <div style='font-size: 0.8rem; color: #F87171;'>Monte Carlo (2,500 runs)</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_k3:
+        st.markdown(f"""
+        <div class='glass-card' style='border-top: 3px solid #F59E0B;'>
+            <div style='color: #94A3B8; font-size: 0.85rem; font-weight: 600;'>PREDICTED SLIPPAGE</div>
+            <div style='font-size: 2.2rem; font-weight: 800; color: #FBBF24; margin: 4px 0;'>+{risk.predicted_delay_days}d</div>
+            <div style='font-size: 0.8rem; color: #FDE68A;'>95% CI: [{risk.confidence_interval_95[0]}d, {risk.confidence_interval_95[1]}d]</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_k4:
+        st.markdown(f"""
+        <div class='glass-card' style='border-top: 3px solid #10B981;'>
+            <div style='color: #94A3B8; font-size: 0.85rem; font-weight: 600;'>PROGRESS DRIFT</div>
+            <div style='font-size: 2.2rem; font-weight: 800; color: #34D399; margin: 4px 0;'>{risk.current_progress_pct}%</div>
+            <div style='font-size: 0.8rem; color: #94A3B8;'>Target Baseline: {risk.expected_progress_pct}%</div>
         </div>
         """, unsafe_allow_html=True)
 
-    st.divider()
-    col_root, col_int = st.columns([1, 1])
-    with col_root:
-        st.error(f"### 🎯 Root Cause Isolation\n\n{root_cause.root_cause_statement}")
-    with col_int:
-        st.success(f"### 💡 Recommended Targeted Intervention\n\n{root_cause.recommended_intervention}\n\n**Expected Leverage Impact:** {root_cause.estimated_leverage_impact}")
+    # Plotly Visuals: Health Radar & Gauge
+    col_g1, col_g2 = st.columns([1, 1])
+    
+    with col_g1:
+        st.markdown("#### 🧭 Multi-Dimensional Health Radar")
+        radar_categories = ['Schedule', 'Budget', 'Resources', 'Dependencies', 'Risk', 'Quality']
+        radar_values = [
+            health.schedule_score,
+            health.budget_score,
+            health.resources_score,
+            health.dependencies_score,
+            health.risk_score,
+            health.quality_score
+        ]
+        
+        fig_radar = go.Figure()
+        fig_radar.add_trace(go.Scatterpolar(
+            r=radar_values + [radar_values[0]],
+            theta=radar_categories + [radar_categories[0]],
+            fill='toself',
+            fillcolor='rgba(99, 102, 241, 0.35)',
+            line=dict(color='#818CF8', width=2),
+            name='Health Breakdown'
+        ))
+        fig_radar.update_layout(
+            polar=dict(
+                radialaxis=dict(visible=True, range=[0, 100], color='#64748B'),
+                angularaxis=dict(color='#94A3B8')
+            ),
+            showlegend=False,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=40, r=40, t=20, b=20),
+            height=320
+        )
+        st.plotly_chart(fig_radar, use_container_width=True)
+
+    with col_g2:
+        st.markdown("#### 🚨 Active Alerts & Tactical Insights")
+        for alert in health.alerts:
+            st.markdown(f"<div class='tag-critical' style='display: block; margin-bottom: 8px; padding: 10px 14px; font-size: 0.9rem;'>⚠️ {alert}</div>", unsafe_allow_html=True)
+        for h_item in health.highlights:
+            st.markdown(f"<div class='tag-success' style='display: block; margin-bottom: 8px; padding: 10px 14px; font-size: 0.9rem;'>✅ {h_item}</div>", unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div class='glass-card' style='padding: 16px; margin-top: 14px; border-left: 4px solid #6366F1;'>
+            <b style='color: #818CF8;'>💡 Sentinel Recommendation:</b><br>
+            <span style='color: #CBD5E1;'>{root_cause.recommended_intervention}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-# ==========================================
+# =========================================================================
+# 2. PREDICTIVE RISK ENGINE
+# =========================================================================
+elif menu == "🔮 1. Predictive Risk Engine":
+    st.markdown("### 🔮 Predictive Risk Detection Engine (Monte Carlo)")
+    st.caption("Stochastic simulation of 2,500 delivery trajectories factoring in velocity uncertainty and dependency chain locks.")
+
+    col_p1, col_p2 = st.columns([1, 1])
+    with col_p1:
+        st.markdown(f"""
+        <div class='glass-card'>
+            <h4 style='color: #F87171; margin-top: 0;'>⚠️ Predicted Deadline Risk: {risk.deadline_risk_level}</h4>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;'>
+                <div>
+                    <span style='color: #94A3B8; font-size: 0.85rem;'>Current Progress</span><br>
+                    <b style='font-size: 1.3rem; color: #F8FAFC;'>{risk.current_progress_pct}%</b>
+                </div>
+                <div>
+                    <span style='color: #94A3B8; font-size: 0.85rem;'>Expected Progress</span><br>
+                    <b style='font-size: 1.3rem; color: #F8FAFC;'>{risk.expected_progress_pct}%</b>
+                </div>
+                <div>
+                    <span style='color: #94A3B8; font-size: 0.85rem;'>Predicted Delay</span><br>
+                    <b style='font-size: 1.3rem; color: #EF4444;'>+{risk.predicted_delay_days} days</b>
+                </div>
+                <div>
+                    <span style='color: #94A3B8; font-size: 0.85rem;'>Failure Probability</span><br>
+                    <b style='font-size: 1.3rem; color: #EF4444;'>{risk.probability_of_delay}%</b>
+                </div>
+            </div>
+            <div style='background: rgba(15, 23, 42, 0.8); padding: 12px; border-radius: 8px;'>
+                <b style='color: #818CF8;'>Primary Root Bottleneck:</b><br>
+                <span style='color: #E2E8F0; font-size: 0.9rem;'>{risk.primary_causes[0] if risk.primary_causes else 'Nominal.'}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_p2:
+        st.markdown("#### 📉 Monte Carlo Simulation Trajectory Distribution")
+        samples = risk.trajectory_samples
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Histogram(
+            x=samples,
+            nbinsx=25,
+            marker_color='#6366F1',
+            opacity=0.75,
+            name='Simulation Runs'
+        ))
+        fig_hist.add_vline(
+            x=state.target_deadline_days,
+            line_width=3,
+            line_dash="dash",
+            line_color="#EF4444",
+            annotation_text=f"Target Deadline (Day {state.target_deadline_days})",
+            annotation_position="top right"
+        )
+        fig_hist.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(title="Project Completion (Days)", color='#94A3B8', gridcolor='rgba(255,255,255,0.05)'),
+            yaxis=dict(title="Frequency", color='#94A3B8', gridcolor='rgba(255,255,255,0.05)'),
+            margin=dict(l=40, r=20, t=30, b=40),
+            height=300
+        )
+        st.plotly_chart(fig_hist, use_container_width=True)
+
+    st.markdown("#### 🔍 Delay Driver Breakdown")
+    for i, cause in enumerate(risk.primary_causes, 1):
+        st.markdown(f"<div class='tag-high' style='display: block; margin-bottom: 8px; padding: 10px 14px; font-size: 0.9rem;'><b>Driver #{i}</b>: {cause}</div>", unsafe_allow_html=True)
+
+
+# =========================================================================
+# 3. ROOT CAUSE INVESTIGATOR
+# =========================================================================
+elif menu == "🕵️ 2. Root Cause Investigator":
+    st.markdown("### 🕵️ AI Root-Cause Investigator")
+    st.caption("Autonomous multi-hop causal graph traversal diagnosing the structural root cause of project delay.")
+
+    st.markdown(f"**Issue Summary**: *{root_cause.issue_summary}* • <span class='tag-optimal'>Confidence: {root_cause.confidence_pct}%</span>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Render Visual Causal Stepper
+    for idx, node in enumerate(root_cause.chain):
+        color = "#EF4444" if node.node_type == "ROOT_CAUSE" else ("#F59E0B" if node.node_type == "BOTTLENECK" else "#6366F1")
+        border_class = f"border-left: 4px solid {color};"
+        st.markdown(f"""
+        <div class='causal-node' style='{border_class}'>
+            <div style='display: flex; justify-content: space-between;'>
+                <b style='color: {color}; font-size: 0.85rem;'>STEP {node.step_number} • [{node.node_type}]</b>
+                <span class='tag-high'>{node.severity} IMPACT</span>
+            </div>
+            <div style='font-size: 1.15rem; font-weight: 700; color: #F8FAFC; margin: 4px 0;'>{node.title}</div>
+            <p style='color: #CBD5E1; margin: 4px 0 8px 0; font-size: 0.95rem;'>{node.description}</p>
+            <div style='font-size: 0.85rem; color: #94A3B8;'><b>Evidence:</b> {node.evidence}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if idx < len(root_cause.chain) - 1:
+            st.markdown("<div class='causal-arrow'>↓</div>", unsafe_allow_html=True)
+
+    col_r1, col_r2 = st.columns([1, 1])
+    with col_r1:
+        st.markdown(f"""
+        <div class='glass-card' style='border-left: 4px solid #EF4444;'>
+            <h4 style='color: #F87171; margin-top: 0;'>🎯 Root Cause Statement</h4>
+            <p style='color: #E2E8F0; font-size: 0.95rem;'>{root_cause.root_cause_statement}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_r2:
+        st.markdown(f"""
+        <div class='glass-card' style='border-left: 4px solid #10B981;'>
+            <h4 style='color: #34D399; margin-top: 0;'>💡 Targeted Leverage Intervention</h4>
+            <p style='color: #E2E8F0; font-size: 0.95rem;'>{root_cause.recommended_intervention}</p>
+            <small style='color: #818CF8;'><b>Impact:</b> {root_cause.estimated_leverage_impact}</small>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# =========================================================================
 # 4. AUTONOMOUS ACTION CENTER
-# ==========================================
+# =========================================================================
 elif menu == "🤖 3. Autonomous Action Center":
-    st.subheader("🤖 Autonomous Action Agent (Human-in-the-Loop)")
-    st.caption("Review and approve AI-recommended corrective actions. Once approved, the agent executes them directly.")
+    st.markdown("### 🤖 Autonomous Action Agent (Human-in-the-Loop)")
+    st.caption("Inspect and approve AI-generated corrective actions. Approved actions immediately execute and sync across state and Jira.")
 
     pending_actions = orch.action_agent.get_pending_actions()
     executed_actions = orch.action_agent.get_executed_actions()
 
-    st.markdown(f"### ⏳ Pending Approval ({len(pending_actions)})")
+    st.markdown(f"#### ⏳ Interventions Awaiting Approval ({len(pending_actions)})")
     if not pending_actions:
-        st.success("No pending actions. All recommended interventions have been resolved.")
+        st.markdown("<div class='tag-success' style='display: block; padding: 14px; font-size: 1rem;'>✅ All recommended actions have been resolved!</div>", unsafe_allow_html=True)
 
     for action in pending_actions:
-        with st.container():
-            st.markdown(f"""
-            <div class='hitl-box'>
-                <div style='display: flex; justify-content: space-between;'>
-                    <b style='font-size: 1.15rem; color: #818CF8;'>{action.title}</b>
-                    <span class='badge-warning'>{action.urgency} URGENCY</span>
-                </div>
-                <p style='margin-top: 8px;'>{action.description}</p>
-                <small style='color: #94A3B8;'>Type: <code>{action.action_type}</code> | Task Key: <code>{action.task_key or 'GLOBAL'}</code></small>
+        st.markdown(f"""
+        <div class='hitl-container'>
+            <div style='display: flex; justify-content: space-between;'>
+                <b style='font-size: 1.15rem; color: #A5B4FC;'>{action.title}</b>
+                <span class='tag-high'>{action.urgency} PRIORITY</span>
             </div>
-            """, unsafe_allow_html=True)
+            <p style='color: #CBD5E1; margin: 8px 0;'>{action.description}</p>
+            <div style='font-size: 0.8rem; color: #94A3B8;'>Action Type: <code>{action.action_type}</code> | Task Key: <code>{action.task_key or 'GLOBAL'}</code></div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            col_btn1, col_btn2, _ = st.columns([1, 1, 3])
-            with col_btn1:
-                if st.button(f"✅ Approve & Execute", key=f"app_{action.action_id}"):
-                    res = orch.action_agent.approve_and_execute(action.action_id)
-                    st.success(f"Executed: {res['summary']}")
-                    st.rerun()
-            with col_btn2:
-                if st.button(f"❌ Reject", key=f"rej_{action.action_id}"):
-                    orch.action_agent.reject_action(action.action_id)
-                    st.warning("Action rejected.")
-                    st.rerun()
+        col_a1, col_a2, _ = st.columns([1.2, 1, 3])
+        with col_a1:
+            if st.button(f"✅ Approve & Execute", key=f"btn_app_{action.action_id}", type="primary"):
+                res = orch.action_agent.approve_and_execute(action.action_id)
+                st.success(f"Executed: {res['summary']}")
+                st.rerun()
+        with col_a2:
+            if st.button(f"❌ Reject", key=f"btn_rej_{action.action_id}"):
+                orch.action_agent.reject_action(action.action_id)
+                st.warning("Action rejected.")
+                st.rerun()
 
-    st.divider()
-    st.markdown(f"### 📜 Execution & Audit Trail ({len(executed_actions)})")
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"#### 📜 Execution & Audit Log ({len(executed_actions)})")
     for act in executed_actions:
-        st.markdown(f"**[{act.executed_at}]** `{act.status.value}` — **{act.title}**")
-        st.caption(f"Result: {act.result_summary}")
+        status_color = "#34D399" if act.status == ActionStatus.EXECUTED else "#EF4444"
+        st.markdown(f"""
+        <div style='background: rgba(15, 23, 42, 0.6); border-left: 3px solid {status_color}; padding: 12px 16px; border-radius: 6px; margin-bottom: 8px;'>
+            <b>[{act.executed_at}]</b> <span style='color: {status_color}; font-weight: bold;'>{act.status.value}</span> — <b>{act.title}</b><br>
+            <small style='color: #94A3B8;'>Result: {act.result_summary}</small>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-# ==========================================
-# 5. WHAT-IF SCENARIO SIMULATOR
-# ==========================================
+# =========================================================================
+# 5. WHAT-IF SCENARIO SANDBOX
+# =========================================================================
 elif menu == "🧠 4. What-If Scenario Sandbox":
-    st.subheader("🧠 What-If / Scenario Simulator")
-    st.caption("Simulate team perturbations, developer absences, deadline shifts, and scope descoping in real time.")
+    st.markdown("### 🧠 What-If / Scenario Simulator Sandbox")
+    st.caption("Run discrete-event simulations on resource shocks, scope adjustments, and deadline compression.")
 
-    from sentinel.scenario_simulator import ScenarioSimulator
     sim = ScenarioSimulator(state)
+    tab1, tab2, tab3 = st.tabs(["👤 Developer Absence Shock", "📅 Deadline Shift", "✂️ Scope Descoping"])
 
-    tab_dev, tab_deadline, tab_scope = st.tabs([
-        "👤 Developer Absence",
-        "📅 Deadline Adjustment",
-        "✂️ Scope Descoping"
-    ])
+    with tab1:
+        st.markdown("#### Simulate Developer Unavailability")
+        dev_map = {d.id: f"{d.name} ({d.role})" for d in state.developers.values()}
+        sel_dev = st.selectbox("Select Developer", list(dev_map.keys()), format_func=lambda x: dev_map[x])
+        absence_days = st.slider("Duration of Absence (Days)", min_value=1, max_value=14, value=5)
 
-    with tab_dev:
-        st.markdown("#### Scenario: What happens if a developer is unavailable?")
-        dev_names = {d.id: d.name for d in state.developers.values()}
-        sel_dev_id = st.selectbox("Select Developer", list(dev_names.keys()), format_func=lambda x: dev_names[x])
-        absent_days = st.slider("Days Unavailable", min_value=1, max_value=14, value=5)
-
-        if st.button("🧪 Run Developer Absence Simulation"):
-            res = sim.simulate_developer_absence(sel_dev_id, absent_days)
-            st.markdown(f"""
-            ```text
-            Scenario: {res.name}
+        if st.button("🧪 Simulate Developer Absence", type="primary"):
+            res = sim.simulate_developer_absence(sel_dev, absence_days)
+            col_s1, col_s2, col_s3 = st.columns(3)
+            with col_s1:
+                st.metric("⏱️ Projected Delay", f"+{res.delay_delta_days} days", delta="Slippage", delta_color="inverse")
+            with col_s2:
+                st.metric("💰 Budget Impact", f"+₹{int(res.cost_delta):,}", delta="Burn rate cost", delta_color="inverse")
+            with col_s3:
+                st.metric("📋 Affected Tasks", f"{len(res.affected_tasks)} items", delta=", ".join(res.affected_tasks))
             
-            Expected delay:     +{res.delay_delta_days} days
-            Budget impact:      +₹{int(res.cost_delta):,}
-            Affected tasks:     {len(res.affected_tasks)} ({', '.join(res.affected_tasks)})
-            Affected milestones: {len(res.affected_milestones)}
-            
-            Recommended:
-            {res.recommendation}
-            ```
-            """)
+            st.info(f"💡 **AI Recommendation**: {res.recommendation}")
 
-    with tab_deadline:
-        st.markdown("#### Scenario: What happens if we adjust the target deadline?")
-        shift_days = st.slider("Deadline Shift (Days)", min_value=-7, max_value=14, value=3)
+    with tab2:
+        st.markdown("#### Simulate Deadline Adjustments")
+        shift = st.slider("Shift Deadline (Days)", min_value=-7, max_value=14, value=3)
 
-        if st.button("🧪 Run Deadline Shift Simulation"):
-            res = sim.simulate_deadline_adjustment(shift_days)
-            st.markdown(f"""
-            ```text
-            Scenario: {res.name}
-            
-            Expected completion: Day {res.simulated_completion_day}
-            Delay relative to target: {res.delay_delta_days} days
-            Risk direction: {res.risk_direction}
-            
-            Recommended:
-            {res.recommendation}
-            ```
-            """)
+        if st.button("🧪 Simulate Deadline Adjustment", type="primary"):
+            res = sim.simulate_deadline_adjustment(shift)
+            st.metric("Projected Completion Day", f"Day {res.simulated_completion_day}", delta=f"{res.risk_direction} RISK")
+            st.info(f"💡 **Recommendation**: {res.recommendation}")
 
-    with tab_scope:
-        st.markdown("#### Scenario: What if we drop non-essential tasks?")
+    with tab3:
+        st.markdown("#### Simulate Scope Descoping")
         active_tasks = {t.id: f"[{t.key}] {t.title} ({t.story_points} pts)" for t in state.tasks.values() if t.status != TaskStatus.DONE}
-        selected_drop_ids = st.multiselect("Select Tasks to Defer/Drop", list(active_tasks.keys()), format_func=lambda x: active_tasks[x])
+        drop_ids = st.multiselect("Select Candidate Tasks to Defer", list(active_tasks.keys()), format_func=lambda x: active_tasks[x])
 
-        if st.button("🧪 Run Scope Reduction Simulation"):
-            if selected_drop_ids:
-                res = sim.simulate_scope_reduction(selected_drop_ids)
-                st.markdown(f"""
-                ```text
-                Scenario: {res.name}
-                
-                Recovered timeline: {abs(res.delay_delta_days)} days faster
-                Budget savings:     ₹{abs(int(res.cost_delta)):,}
-                Deferred tasks:     {', '.join(res.affected_tasks)}
-                
-                Recommended:
-                {res.recommendation}
-                ```
-                """)
+        if st.button("🧪 Simulate Scope Descoping", type="primary"):
+            if drop_ids:
+                res = sim.simulate_scope_reduction(drop_ids)
+                col_sc1, col_sc2 = st.columns(2)
+                with col_sc1:
+                    st.metric("⏱️ Recovered Time", f"{abs(res.delay_delta_days)} days faster", delta="Timeline Recovery")
+                with col_sc2:
+                    st.metric("💰 Budget Savings", f"₹{abs(int(res.cost_delta)):,}", delta="Saved Burn")
+                st.success(f"💡 **Recommendation**: {res.recommendation}")
             else:
-                st.warning("Please select at least one task to drop.")
+                st.warning("Please select at least one task.")
 
 
-# ==========================================
+# =========================================================================
 # 6. TEAM WORKLOAD & BURNOUT
-# ==========================================
+# =========================================================================
 elif menu == "👥 5. Team Workload & Burnout":
-    st.subheader("👥 Team Workload & Burnout Risk (AI Resource Optimizer)")
-    st.caption("Monitors capacity strain, context switching overhead, and auto-balances tasks across engineers.")
+    st.markdown("### 👥 Team Workload & AI Resource Optimizer")
+    st.caption("Real-time workload distribution analysis, burnout risk scoring, and automatic task rebalancing.")
 
-    workload_summary = analysis["team_workload"]
+    workload_data = analysis["team_workload"]
     rebalancing_recs = analysis["rebalancing_recommendations"]
 
-    st.markdown("### 📊 Team Capacity & Burnout Matrix")
-    for dev in workload_summary:
-        col_name, col_bar, col_burnout = st.columns([2, 3, 2])
-        with col_name:
-            st.write(f"**{dev['name']}** ({dev['role']})")
-            st.caption(f"{dev['assigned_points']} / {dev['capacity_points']} Story Points ({dev['status_label']})")
-        with col_bar:
-            st.progress(min(1.0, dev["workload_pct"] / 150.0))
-            st.caption(f"Workload: {dev['workload_pct']}%")
-        with col_burnout:
-            b_color = "red" if dev['burnout_score'] > 70 else ("orange" if dev['burnout_score'] > 40 else "green")
-            st.write(f"**Burnout Risk**: :{b_color}[{dev['burnout_score']}%]")
-            st.caption(f"Active tasks: {dev['active_task_count']}")
+    # Visual Bar Chart of Workloads
+    names = [d["name"] for d in workload_data]
+    workloads = [d["workload_pct"] for d in workload_data]
+    colors = ['#EF4444' if w > 105 else ('#34D399' if w < 60 else '#60A5FA') for w in workloads]
 
-    st.divider()
-    st.markdown("### ⚖️ AI Automated Rebalancing Recommendations")
+    fig_bar = go.Figure()
+    fig_bar.add_trace(go.Bar(
+        x=names,
+        y=workloads,
+        marker_color=colors,
+        text=[f"{w}%" for w in workloads],
+        textposition='outside'
+    ))
+    fig_bar.add_hline(y=100, line_dash="dash", line_color="#EF4444", annotation_text="100% Safe Capacity Threshold")
+    fig_bar.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        yaxis=dict(title="Workload Utilization (%)", color='#94A3B8', gridcolor='rgba(255,255,255,0.05)'),
+        xaxis=dict(color='#94A3B8'),
+        margin=dict(l=40, r=20, t=20, b=40),
+        height=320
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    st.markdown("#### ⚖️ AI Optimal Task Rebalancing Matrix")
     if not rebalancing_recs:
-        st.success("Workload is optimally distributed. No rebalancing transfers required.")
+        st.success("Workload is balanced across all team members.")
 
     for rec in rebalancing_recs:
-        st.info(f"""
-        **💡 Recommended Transfer:**
-        - **Task**: [{rec['task_key']}] *{rec['task_title']}* ({rec['story_points']} story points)
-        - **From**: **{rec['from_dev_name']}** ({rec['from_current_workload']}% → {rec['from_projected_workload']}%)
-        - **To**: **{rec['to_dev_name']}** ({rec['to_current_workload']}% → {rec['to_projected_workload']}%)
-        - **Impact**: {rec['reasoning']}
-        """)
+        st.markdown(f"""
+        <div class='glass-card' style='border-left: 4px solid #6366F1;'>
+            <b style='color: #818CF8; font-size: 1.1rem;'>💡 Suggested Reassignment: [{rec['task_key']}] {rec['task_title']} ({rec['story_points']} pts)</b><br>
+            <div style='margin: 8px 0; color: #CBD5E1;'>
+                • <b>From</b>: <span style='color: #F87171;'>{rec['from_dev_name']}</span> ({rec['from_current_workload']}% → {rec['from_projected_workload']}%)<br>
+                • <b>To</b>: <span style='color: #34D399;'>{rec['to_dev_name']}</span> ({rec['to_current_workload']}% → {rec['to_projected_workload']}%)<br>
+                • <b>Impact Rationale</b>: {rec['reasoning']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-# ==========================================
-# 7. DEPENDENCY INTELLIGENCE & CPM
-# ==========================================
-elif menu == "🔗 6. Dependency Intelligence & CPM":
-    st.subheader("🔗 Dependency Intelligence & Critical Path Method (CPM)")
-    st.caption("DAG analysis identifies bottleneck chains, zero-slack critical paths, and upstream delay propagation.")
+# =========================================================================
+# 7. DEPENDENCY DAG & CRITICAL PATH
+# =========================================================================
+elif menu == "🔗 6. Dependency DAG & Critical Path":
+    st.markdown("### 🔗 Dependency DAG & Critical Path Method (CPM)")
+    st.caption("Zero-slack critical path identification and upstream delay cascade simulation.")
 
     tree_summary = analysis["dependency_tree"]
     critical_path = analysis["critical_path"]
 
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.markdown("### 🚨 Critical Path Tasks")
-        st.write("Tasks with **Zero Slack** that directly dictate final delivery date:")
+    col_cp1, col_cp2 = st.columns([1, 2])
+    with col_cp1:
+        st.markdown("#### ⚡ Critical Path Tasks (Zero Slack)")
         for cp_id in critical_path:
-            task = state.tasks.get(cp_id)
-            if task:
-                st.error(f"⚡ **[{task.key}]** {task.title} ({task.remaining_days}d remaining)")
+            t = state.tasks.get(cp_id)
+            if t:
+                st.markdown(f"<div class='tag-critical' style='display: block; margin-bottom: 8px; padding: 10px;'>⚡ <b>[{t.key}]</b> {t.title} ({t.remaining_days}d rem)</div>", unsafe_allow_html=True)
 
-    with col2:
-        st.markdown("### 📋 Complete Dependency Registry")
-        table_data = []
+    with col_cp2:
+        st.markdown("#### 📋 Task Dependency Registry")
+        table_rows = []
         for t in tree_summary:
-            table_data.append({
+            table_rows.append({
                 "Key": t["key"],
                 "Title": t["title"],
                 "Status": t["status"],
                 "Dependencies": ", ".join(t["dependencies"]) or "None",
-                "Downstream": ", ".join(t["downstream"]) or "None",
-                "Critical?": "⚡ YES" if t["is_critical"] else "NO",
-                "Slack (days)": t["slack"]
+                "Critical Path?": "⚡ YES" if t["is_critical"] else "NO",
+                "Slack": f"{t['slack']}d"
             })
-        st.dataframe(table_data, use_container_width=True)
+        st.dataframe(table_rows, use_container_width=True)
 
     st.divider()
-    st.markdown("### 🌊 Interactive Cascade Delay Simulator")
-    selected_task_key = st.selectbox("Select Task to Test Delay Impact", [t.key for t in state.tasks.values()])
-    test_delay = st.slider("Simulated Task Delay (Days)", 1, 10, 3)
+    st.markdown("#### 🌊 Cascade Delay Impact Test")
+    target_key = st.selectbox("Select Task to Inject Delay", [t.key for t in state.tasks.values()])
+    delay_input = st.slider("Simulated Delay (Days)", 1, 10, 3)
 
-    from sentinel.dependency_engine import DependencyEngine
     dep_engine = DependencyEngine(state)
-    target_task_id = next(tid for tid, t in state.tasks.items() if t.key == selected_task_key)
-    cascade = dep_engine.calculate_cascade_impact(target_task_id, float(test_delay))
+    t_id = next(tid for tid, t in state.tasks.items() if t.key == target_key)
+    cascade_res = dep_engine.calculate_cascade_impact(t_id, float(delay_input))
 
     st.markdown(f"""
-    - **Delayed Task**: `[{cascade['delayed_task_key']}]` (+{cascade['delay_days']} days)
-    - **Downstream Tasks Impacted**: `{cascade['affected_downstream_count']}`
-    - **Project-Level Delay Delta**: `+{cascade['project_delay_delta']} days`
-    - **Critical Path Task?**: `{'YES (Direct Schedule Impact)' if cascade['is_critical_task'] else 'NO (Absorbed by Slack)'}`
-    """)
+    <div class='glass-card'>
+        • <b>Target Task</b>: <code>[{cascade_res['delayed_task_key']}]</code> (+{cascade_res['delay_days']} days)<br>
+        • <b>Downstream Tasks Affected</b>: <b>{cascade_res['affected_downstream_count']}</b><br>
+        • <b>Project-Level Delay Delta</b>: <b style='color: #EF4444;'>+{cascade_res['project_delay_delta']} days</b><br>
+        • <b>Critical Path Task?</b>: <b>{'YES (Directly delays final delivery)' if cascade_res['is_critical_task'] else 'NO (Absorbed by Slack)'}</b>
+    </div>
+    """, unsafe_allow_html=True)
 
 
-# ==========================================
+# =========================================================================
 # 8. PROJECT INSTITUTIONAL MEMORY
-# ==========================================
+# =========================================================================
 elif menu == "📚 7. Project Institutional Memory":
-    st.subheader("📚 Project Institutional Memory")
-    st.caption("Long-term memory retaining Architectural Decision Records (ADRs), incident post-mortems, and lessons learned.")
+    st.markdown("### 📚 Project Institutional Memory & Knowledge Base")
+    st.caption("Long-term storage of Architectural Decision Records (ADRs), incident post-mortems, and stakeholder constraints.")
 
     memory_store = orch.memory
+    m_tab1, m_tab2 = st.tabs(["💬 Query Memory Assistant", "📖 Browse All Records"])
 
-    tab_ask, tab_browse, tab_add = st.tabs([
-        "💬 Ask Memory Assistant",
-        "📖 Browse Records",
-        "➕ Add New Memory Record"
-    ])
+    with m_tab1:
+        st.markdown("#### Ask Sentinel about Past Decisions & Incidents")
+        q_options = [
+            "Why did we choose Razorpay over Stripe for payments?",
+            "What was the Redis webhook incident in Sprint 2?",
+            "What is the VP of Product zero downtime constraint?"
+        ]
+        sel_q = st.selectbox("Quick Query Presets", q_options)
+        custom_q = st.text_input("Or write your custom query:", value=sel_q)
 
-    with tab_ask:
-        st.markdown("#### Query Institutional Memory")
-        user_query = st.text_input(
-            "Ask a question about previous decisions, incidents, or architecture:",
-            value="Why did we choose Razorpay over Stripe for payments?"
-        )
+        if st.button("🔍 Search Institutional Memory", type="primary"):
+            ans = memory_store.answer_question(custom_q)
+            st.markdown(f"""
+            <div class='glass-card' style='border-left: 4px solid #6366F1;'>
+                {ans['answer']}
+            </div>
+            """, unsafe_allow_html=True)
 
-        if st.button("🔍 Search Institutional Memory"):
-            ans = memory_store.answer_question(user_query)
-            st.markdown(ans["answer"])
-
-    with tab_browse:
-        st.markdown(f"#### Institutional Knowledge Base ({len(memory_store.entries)} Records)")
+    with m_tab2:
+        st.markdown(f"#### All Stored Knowledge Records ({len(memory_store.entries)})")
         for entry in memory_store.entries:
             with st.expander(f"[{entry.category}] {entry.title} ({entry.timestamp})"):
                 st.write(entry.content)
-                st.caption(f"Tags: {', '.join(entry.tags)} | Related Tasks: {', '.join(entry.related_tasks)}")
-
-    with tab_add:
-        st.markdown("#### Add New Decision / Lesson Learned")
-        new_cat = st.selectbox("Category", ["DECISION", "INCIDENT", "ARCHITECTURE", "LESSON_LEARNED", "STAKEHOLDER_PREF"])
-        new_title = st.text_input("Title")
-        new_content = st.text_area("Content / Rationale")
-        new_tags = st.text_input("Tags (comma separated)", "payments, architecture")
-
-        if st.button("💾 Save to Project Memory"):
-            if new_title and new_content:
-                entry = memory_store.add_entry(
-                    category=new_cat,
-                    title=new_title,
-                    content=new_content,
-                    tags=[t.strip() for t in new_tags.split(",")]
-                )
-                st.success(f"Saved memory record '{entry.title}' successfully.")
-                st.rerun()
-            else:
-                st.warning("Please fill in both title and content.")
+                st.caption(f"Tags: {', '.join(entry.tags)} | Related: {', '.join(entry.related_tasks)}")
