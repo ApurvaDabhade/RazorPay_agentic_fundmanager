@@ -1,23 +1,17 @@
-# Core AI/Agent Framework
-strands-agents
-strands-agents-tools
-bedrock-agentcore-starter-toolkit
-langgraph
+# Project Sentinel - Autonomous & Predictive AI Project Manager
+# Core Web & Visualization
+streamlit>=1.30.0
+plotly>=5.18.0
+pandas>=2.0.0
+numpy>=1.24.0
 
-# MCP (Model Context Protocol)
-mcp
+# Graph & Simulation Analytics
+networkx>=3.0
+scipy>=1.10.0
+pydantic>=2.0.0
 
-# Data & Finance
-yfinance
-pandas
-numpy
+# HTTP & Integrations
+requests>=2.31.0
 
-# Web Framework
-streamlit
-plotly
-
-# AWS
-boto3
-
-# HTTP Requests
-requests
+# Optional Cloud / LLM Extensions
+boto3>=1.34.0
